@@ -274,10 +274,36 @@ const res = await fetch(
           />
         </div>
 
-        <div className="flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm mt-10">
-          <FiLock className="mr-2" />
-          Secured payment by payment gateway
-        </div>
+        <div className="mt-8 flex justify-center">
+  <a
+    href="https://razorpay.com/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="
+      rounded-md
+      overflow-hidden
+      shadow-md
+      hover:shadow-lg
+      transition
+      duration-300
+    "
+  >
+    <img
+      src="https://badges.razorpay.com/badge-light.png"
+      className="h-11 dark:hidden"
+      alt="Razorpay"
+    />
+
+    <img
+      src="https://badges.razorpay.com/badge-dark.png"
+      className="h-11 hidden dark:block"
+      alt="Razorpay"
+    />
+  </a>
+</div>
+
+
+
       </div>
     </>
   );

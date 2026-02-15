@@ -38,6 +38,14 @@ export default function GoogleCallbackPage() {
 
         // 3️⃣ Store JWT
         localStorage.setItem("token", data.token);
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("userName");
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role); 
+
+        console.log("GOOGLE ROLE:", data.role);
 
         // 4️⃣ Redirect to dashboard
         router.replace("/dashboard");

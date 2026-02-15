@@ -15,33 +15,55 @@ export default function LoginPage() {
 
   const router = useRouter();
 
+
   // ================= EMAIL LOGIN (UNCHANGED) =================
   const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please enter email and password");
+  if (!email || !password) {
+    alert("Please enter email and password");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await fetch("http://localhost:8080/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data?.message || data?.error || "Login failed");
       return;
     }
 
-    try {
-      setLoading(true);
+    // ⭐ CLEAR OLD LOGIN DATA
+localStorage.removeItem("token");
+localStorage.removeItem("role");
+localStorage.removeItem("userName");
 
-      const res = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
 
-      if (!res.ok) throw new Error("Login failed");
+// ⭐ SAVE NEW LOGIN DATA
+localStorage.setItem("token", data.token);
+localStorage.setItem("role", data.role.toUpperCase());
+localStorage.setItem("userName", email.split("@")[0]);
 
-      const data = await res.json();
-      localStorage.setItem("token", data.token);
-      router.push("/dashboard");
-    } catch {
-      alert("Invalid email or password");
-    } finally {
-      setLoading(false);
-    }
-  };
+console.log("LOGIN RESPONSE:", data);
+console.log("ROLE SAVED:", data.role);
+console.log("LOCAL STORAGE ROLE:", localStorage.getItem("role"));
+
+router.push("/dashboard");
+
+
+
+  } catch (err) {
+    alert("Server error. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ================= GOOGLE LOGIN =================
   const handleGoogleLogin = () => {

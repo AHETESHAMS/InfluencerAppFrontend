@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { signOut, getSession } from "next-auth/react";
 
 
+
 export default function HomePage() {
   const [dark, setDark] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const router = useRouter();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [userName, setUserName] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   // ⭐ COUNTER STATES
 const [creators, setCreators] = useState(0);
 const [clicks, setClicks] = useState(0);
@@ -26,25 +29,48 @@ const [brands, setBrands] = useState(0);
     const savedTheme = localStorage.getItem("theme");
 
     if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      setDark(true);
-    } else {
-      document.documentElement.classList.remove("dark");
-      setDark(false);
-    }
+  document.documentElement.classList.add("dark");
+}
+
+setDark(savedTheme === "dark");
+
 
     const token = localStorage.getItem("token");
-    if (token) {
-      setIsLoggedIn(true);
-    }
 
-    const loadUser = async () => {
-      const session = await getSession();
-      if (session?.user) {
-        setUserName(session.user.name || null);
-        setUserImage(session.user.image || null);
-      }
-    };
+setIsLoggedIn(!!token);
+
+
+
+
+  const loadUser = async () => {
+
+  const savedName = localStorage.getItem("userName");
+  const savedImage = localStorage.getItem("userImage");
+
+  if (savedName) setUserName(savedName);
+  if (savedImage) setUserImage(savedImage);
+
+  const role = localStorage.getItem("role");
+  if (role?.toUpperCase() === "ADMIN") {
+    setIsAdmin(true);
+  }
+
+  // session fetch silently (background update)
+  const session = await getSession();
+
+  if (session?.user) {
+    const name = session.user.name || savedName;
+    const image = session.user.image || savedImage;
+
+    setUserName(name);
+    setUserImage(image || null);
+
+    // update storage for next loads
+    localStorage.setItem("userName", name || "");
+    localStorage.setItem("userImage", image || "");
+  }
+};
+
 
     loadUser();
   },
@@ -59,8 +85,8 @@ useEffect(() => {
 
   const animate = (setter: React.Dispatch<React.SetStateAction<number>>, target: number) => {
     let count = 0;
-    const duration = 1200;
-    const stepTime = 16;
+    const duration = 1600;
+    const stepTime = 32;
     const steps = duration / stepTime;
     const increment = target / steps;
 
@@ -100,21 +126,23 @@ useEffect(() => {
   };
 
   const handleLogout = async () => {
-    localStorage.removeItem("token");
-    await signOut({ redirect: false });
-    setIsLoggedIn(false);
-    router.push("/dashboard");
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("userName");
+
+
+  await signOut({ redirect: false });
+
+  window.location.reload();   // instant refresh + clean state
+
   };
 
   return (
-    <main className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300 animate-fadeIn">
+    <main className="pt-16 min-h-screen bg-white dark:bg-gray-950 transition-all duration-300">
 
       
       {/* ================= HEADER ================= */}
-      <header className="fixed top-0 left-0 w-full z-50
-bg-white/90 dark:bg-gray-950/90
-backdrop-blur-md
-border-b border-gray-200 dark:border-gray-800">
+      <header className="fixed top-0 left-0 w-full z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
 
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -124,7 +152,12 @@ border-b border-gray-200 dark:border-gray-800">
 
           <nav className="flex items-center gap-3 sm:gap-6 text-sm sm:text-base text-gray-700 dark:text-gray-300 font-medium relative">
             
-            <a href="#" className="hidden sm:inline">Features</a>
+            <button
+            onClick={() => router.push("/features")}
+            className="hidden sm:inline hover:text-emerald-500"
+            >
+            Features
+            </button>
 
             <a
               onClick={() => router.push("/subscribe")}
@@ -132,6 +165,16 @@ border-b border-gray-200 dark:border-gray-800">
             >
               Pricing
             </a>
+            {isAdmin && (
+  <button
+    onClick={() => router.push("/admin")}
+    className="hidden md:inline hover:text-emerald-500 font-medium"
+  >
+    Admin
+  </button>
+)}
+
+
 
             {/* 🌗 Dark mode */}
             <button
@@ -155,11 +198,12 @@ border-b border-gray-200 dark:border-gray-800">
               ☰
             </button>
 
-            {!isLoggedIn ? (
+            {isLoggedIn === null ? null : !isLoggedIn ? (
+
               <div className="hidden sm:flex items-center gap-2">
                 <button
                   onClick={() => router.push("/login")}
-                  className="bg-emerald-500 text-white px-5 py-2 rounded-full"
+                  className="bg-emerald-600 text-white px-5 py-2 rounded-full hover:bg-emerald-700 transition"
                 >
                   Login
                 </button>
@@ -177,18 +221,19 @@ border-b border-gray-200 dark:border-gray-800">
                   onClick={() => setMenuOpen(!menuOpen)}
                   className="flex items-center gap-3 cursor-pointer"
                 >
-                  {userImage && userImage.trim() !== "" ? (
-                    <img
-                      src={userImage}
-                      alt="profile"
-                      className="w-9 h-9 rounded-full border object-cover"
-                      onError={() => setUserImage(null)}
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold text-lg">
-                      {(userName?.trim().charAt(0) || "U").toUpperCase()}
-                    </div>
-                  )}
+                  {userImage ? (
+                  <img
+                    src={userImage}
+                    alt="profile"
+                    className="w-9 h-9 rounded-full border object-cover"
+                  />
+                ) : userName ? (
+                  <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold text-lg">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
+                )}
 
                   {userName && (
                     <span className="hidden md:block font-medium">
@@ -235,6 +280,15 @@ border-b border-gray-200 dark:border-gray-800">
       Pricing
     </button>
 
+    {isAdmin && (
+    <button
+      onClick={() => router.push("/admin")}
+      className="block w-full text-left"
+    >
+      Admin
+    </button>
+  )}
+
     {!isLoggedIn && (
       <>
         <button
@@ -256,8 +310,7 @@ border-b border-gray-200 dark:border-gray-800">
 )}
 
       {/* ================= HERO ================= */}
-<section className="max-w-7xl mx-auto px-6 pt-24 md:pt-28 pb-16 md:pb-20
-grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+<section className="max-w-7xl mx-auto px-6 pt-20 md:pt-24 lg:min-h-[88vh] grid lg:grid-cols-2 gap-12 lg:gap-20 items-start">
 
   {/* LEFT CONTENT */}
   <div className="text-center lg:text-left">
@@ -289,15 +342,7 @@ grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         Cancel anytime • No hidden fees
       </p>
 
-      {/* BENEFITS */}
-      <ul className="mt-8 space-y-3 text-gray-700 dark:text-gray-300 text-base sm:text-lg text-center lg:text-left">
-
-        <li>✅ Boost your link clicks</li>
-        <li>✅ Promote affiliate products easily</li>
-        <li>✅ Share one smart link everywhere</li>
-        <li>✅ Built for creators & influencers</li>
-      </ul>
-
+    
       {/* SOCIAL PROOF */}
       <div className="mt-10 flex justify-center lg:justify-start gap-6 sm:gap-10 flex-wrap">
 
@@ -327,18 +372,31 @@ grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
     </div>
   </div>
 
-  {/* RIGHT IMAGE */}
-  {/* RIGHT IMAGE */}
-<div className="flex justify-center lg:justify-end mt-10 lg:mt-0">
+  {/* RIGHT MOBILE PREVIEW */}
+<div className="flex justify-center items-center lg:-mt-2">
 
-  <div className="w-[260px] sm:w-[300px] md:w-[340px] lg:w-[360px]">
-    <div className="rounded-3xl overflow-hidden bg-white dark:bg-gray-900 shadow-2xl">
+  <div className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px]">
+
+    <div className="
+      px-1.5 py-2
+      rounded-[28px]
+      bg-white dark:bg-gray-900
+      shadow-[0_25px_60px_rgba(0,0,0,0.18)]
+    ">
+
       <img
         src="/images/dashboard-profile.png"
-        alt="preview"
-        className="w-full h-auto object-contain"
+        alt="mobile preview"
+        className="
+          w-full
+          h-auto
+          object-contain
+          rounded-[22px]
+        "
       />
+
     </div>
+
   </div>
 
 </div>
@@ -551,7 +609,7 @@ grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 <div className="mt-10 flex flex-wrap justify-center items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
 
   <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
-    🔒 <span>Secure Payments</span>
+    🔒 <span>Secure Payments By Razorpay</span>
   </div>
 
   <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -575,10 +633,30 @@ grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         <div className="max-w-7xl mx-auto px-6 py-10 text-center text-sm text-gray-600 dark:text-gray-400">
 
           <div className="flex flex-wrap justify-center gap-6 mb-4">
-            <a href="#" className="hover:text-emerald-500 transition">About</a>
-            <a href="#" className="hover:text-emerald-500 transition">Privacy Policy</a>
-            <a href="#" className="hover:text-emerald-500 transition">Terms</a>
-            <a href="#" className="hover:text-emerald-500 transition">Contact</a>
+            <button
+            onClick={() => router.push("/about")}
+            className="hover:text-emerald-500 transition"
+            >
+            About
+            </button>
+            <button
+            onClick={() => router.push("/privacy")}
+            className="hover:text-emerald-500 transition"
+            >
+            Privacy Policy </button>
+            <button
+            onClick={() => router.push("/terms")}
+            className="hover:text-emerald-500 transition"
+        >
+          Terms & Conditions
+          </button>
+            <button
+          onClick={() => router.push("/contact")}
+          className="hover:text-emerald-500 transition"
+          >
+          Contact Us
+          </button>
+
           </div>
 
           <p>
@@ -587,6 +665,8 @@ grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
         </div>
       </footer>
+      
+
 
     </main>
   );
