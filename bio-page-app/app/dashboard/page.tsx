@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, getSession } from "next-auth/react";
+import MinimalTemplate from "@/components/templates/MinimalTemplate";
+
 
 
 
@@ -15,9 +17,23 @@ export default function HomePage() {
 
   const [userName, setUserName] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [username, setUsername] = useState("");
+  const previewData = {
+  name: "Rohit Creator",
+  bio: "Affiliate marketer & content creator",
+  image: "/avatar.png",
+  links: [
+    { title: "My Store", url: "#" },
+    { title: "YouTube Channel", url: "#" },
+    { title: "Instagram", url: "#" },
+  ],
+};
+
+  
 
 
 
@@ -164,25 +180,23 @@ useEffect(() => {
       flex items-center justify-between
       bg-white
       shadow-[0_10px_30px_rgba(0,0,0,0.12)]
-      px-10 h-20 mt-4
+      px-5 md:px-10
+      h-16 md:h-20
+      mt-3 md:mt-4
       transition-all duration-500 ease-out
       transform
-
       ${hideHeader ? "-translate-y-24 opacity-0" : "translate-y-0 opacity-100"}
     `}
   >
 
-
     {/* LOGO */}
-    <span
-  className="font-extrabold tracking-tight text-2xl text-gray-900"
->
-  Influencer
-</span>
-
+    <span className="font-extrabold tracking-tight text-xl md:text-2xl text-gray-900">
+      Influencer
+    </span>
 
     {/* CENTER NAV */}
     <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium">
+
       <button
         onClick={() => router.push("/features")}
         className="text-gray-600 hover:text-gray-900 transition"
@@ -197,6 +211,23 @@ useEffect(() => {
         Pricing
       </button>
 
+      {/* ⭐ Templates Capsule */}
+      <button
+        onClick={() => router.push("/templates")}
+
+        className="
+          px-5 py-2
+          rounded-full
+          bg-gradient-to-r from-indigo-500 to-purple-500
+          text-white
+          shadow-md
+          hover:scale-105
+          transition
+        "
+      >
+        Templates
+      </button>
+
       {isAdmin && (
         <button
           onClick={() => router.push("/admin")}
@@ -208,10 +239,9 @@ useEffect(() => {
     </nav>
 
     {/* RIGHT SIDE */}
-    <div className="flex items-center gap-4 relative">
+    <div className="flex items-center gap-3 relative">
 
-      
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU BUTTON */}
       <button
         className="md:hidden text-2xl text-gray-700"
         onClick={() => setMobileMenu(!mobileMenu)}
@@ -303,47 +333,74 @@ useEffect(() => {
 
 
 
+
 {/* MOBILE MENU */}
 {mobileMenu && (
-  <div className="sm:hidden mt-16 bg-white border-b border-gray-200 px-6 py-4 space-y-4">
+  <div className="fixed top-20 left-0 w-full bg-white shadow-lg z-40 px-6 py-6 space-y-5 md:hidden">
 
-    <a href="#" className="block">Features</a>
-
+    {/* FEATURES */}
     <button
-      onClick={() => router.push("/subscribe")}
-      className="block"
+      onClick={() => {
+        router.push("/features");
+        setMobileMenu(false);
+      }}
+      className="block w-full text-left text-gray-800 font-medium"
+    >
+      Features
+    </button>
+
+    {/* PRICING */}
+    <button
+      onClick={() => {
+        router.push("/subscribe");
+        setMobileMenu(false);
+      }}
+      className="block w-full text-left text-gray-800 font-medium"
     >
       Pricing
     </button>
 
+    {/* ADMIN */}
     {isAdmin && (
-    <button
-      onClick={() => router.push("/admin")}
-      className="block w-full text-left"
-    >
-      Admin
-    </button>
-  )}
+      <button
+        onClick={() => {
+          router.push("/admin");
+          setMobileMenu(false);
+        }}
+        className="block w-full text-left text-gray-800 font-medium"
+      >
+        Admin
+      </button>
+    )}
 
+    {/* AUTH BUTTONS */}
     {!isLoggedIn && (
       <>
         <button
-          onClick={() => router.push("/login")}
-          className="block w-full text-left"
+          onClick={() => {
+            router.push("/login");
+            setMobileMenu(false);
+          }}
+          className="block w-full text-left text-gray-800 font-medium"
         >
           Login
         </button>
 
         <button
-          onClick={() => router.push("/register")}
-          className="block w-full text-left"
+          onClick={() => {
+            router.push("/register");
+            setMobileMenu(false);
+          }}
+          className="block w-full text-left text-gray-800 font-medium"
         >
           Sign Up
         </button>
       </>
     )}
+
   </div>
 )}
+
 
       {/* ================= HERO ================= */}
 <section className="relative overflow-hidden min-h-screen -mt-16 pt-16 pb-28">
@@ -373,58 +430,76 @@ useEffect(() => {
 
       <div className="mt-8 flex flex-col items-center lg:items-start">
         {/* Username Creator */}
-<div className="flex w-full max-w-xl mx-auto lg:mx-0 mt-6">
+<div className="w-full max-w-xl mx-auto lg:mx-0 mt-6">
 
-  {/* input */}
-  <div className="flex items-center bg-white rounded-full px-5 py-4 flex-1 shadow-md">
-    <span className="text-gray-500 mr-1">
-      influencer/
-    </span>
+  <div className="flex flex-col sm:flex-row gap-3">
 
-    <input
-      type="text"
-      placeholder="yourname"
-      value={username}
-      onChange={(e) => setUsername(e.target.value)}
-      className="outline-none flex-1 text-gray-800 placeholder-gray-400"
-    />
+    {/* input */}
+    <div className="flex items-center bg-white rounded-full px-5 py-4 flex-1 shadow-md">
+      <span className="text-gray-500 mr-1">influencer/</span>
+
+      <input
+        type="text"
+        placeholder="yourname"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="outline-none flex-1 text-gray-800 placeholder-gray-400 bg-transparent"
+      />
+    </div>
+
+    {/* button */}
+    <button
+      onClick={handleCreateUsername}
+      className="
+        bg-green-800 hover:bg-green-700
+        text-white
+        px-8 py-4
+        rounded-full
+        font-semibold
+        transition
+        whitespace-nowrap
+      "
+    >
+      Get started free
+    </button>
+
+  </div>
+</div>
+
+
+        {/* SOCIAL PROOF */}
+<div className="mt-10 flex justify-center lg:justify-start gap-10">
+
+  {/* ITEM */}
+  <div className="flex flex-col items-center text-center min-w-[90px]">
+    <p className="text-4xl font-extrabold leading-none tracking-tight">
+      {creators.toLocaleString()}+
+    </p>
+    <p className="text-sm text-white/70 mt-1 tracking-wide">
+      Creators
+    </p>
   </div>
 
-  {/* button */}
-  <button
-    onClick={handleCreateUsername}
-    className="ml-3 bg-green-800 hover:bg-green-700 text-white px-8 rounded-full font-semibold transition"
-  >
-    Get started free
-  </button>
+  <div className="flex flex-col items-center text-center min-w-[90px]">
+    <p className="text-4xl font-extrabold leading-none tracking-tight">
+      {clicks.toLocaleString()}+
+    </p>
+    <p className="text-sm text-white/70 mt-1 tracking-wide">
+      Clicks
+    </p>
+  </div>
+
+  <div className="flex flex-col items-center text-center min-w-[90px]">
+    <p className="text-4xl font-extrabold leading-none tracking-tight">
+      {brands.toLocaleString()}+
+    </p>
+    <p className="text-sm text-white/70 mt-1 tracking-wide">
+      Brands
+    </p>
+  </div>
 
 </div>
 
-        {/* SOCIAL PROOF */}
-        <div className="mt-10 flex justify-center lg:justify-start gap-6 sm:gap-10 flex-wrap">
-
-          <div className="text-center">
-            <p className="text-4xl font-extrabold">
-              {creators.toLocaleString()}+
-            </p>
-            <p className="text-sm text-white/70">Creators</p>
-          </div>
-
-          <div className="text-center">
-            <p className="text-4xl font-extrabold">
-              {clicks.toLocaleString()}+
-            </p>
-            <p className="text-sm text-white/70">Clicks</p>
-          </div>
-
-          <div className="text-center">
-            <p className="text-4xl font-extrabold">
-              {brands.toLocaleString()}+
-            </p>
-            <p className="text-sm text-white/70">Brands</p>
-          </div>
-
-        </div>
 
       </div>
     </div>
@@ -447,6 +522,8 @@ useEffect(() => {
 
   </div>
 </section>
+
+
 
 
 
