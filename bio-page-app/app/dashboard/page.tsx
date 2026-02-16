@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, getSession } from "next-auth/react";
 
 
 
 export default function HomePage() {
-  const [dark, setDark] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const router = useRouter();
 
@@ -17,6 +16,10 @@ export default function HomePage() {
   const [userName, setUserName] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [username, setUsername] = useState("");
+
+
 
   // ⭐ COUNTER STATES
 const [creators, setCreators] = useState(0);
@@ -24,22 +27,15 @@ const [clicks, setClicks] = useState(0);
 const [brands, setBrands] = useState(0);
 
 
-  // ✅ FIXED: Global Dark Mode Load
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-
-    if (savedTheme === "dark") {
-  document.documentElement.classList.add("dark");
-}
-
-setDark(savedTheme === "dark");
+  
 
 
-    const token = localStorage.getItem("token");
+    useEffect(() => {
+  const token = localStorage.getItem("token");
+  setIsLoggedIn(!!token);
 
-setIsLoggedIn(!!token);
-
-
+  loadUser();
+}, []);
 
 
   const loadUser = async () => {
@@ -71,11 +67,6 @@ setIsLoggedIn(!!token);
   }
 };
 
-
-    loadUser();
-  },
-  
-  []);
   // ⭐ COUNTER ANIMATION
 useEffect(() => {
   let started = false;
@@ -109,22 +100,32 @@ useEffect(() => {
 
 }, []);
 
+const [hideHeader, setHideHeader] = useState(false);
+const lastScroll = useRef(0);
+
+useEffect(() => {
+  const handleScroll = () => {
+    const currentScroll = window.scrollY;
+    setScrolled(currentScroll > 20);
 
 
-  
-  // ✅ FIXED: Global Dark Toggle
-  const toggleTheme = () => {
-    if (document.documentElement.classList.contains("dark")) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setDark(false);
+    if (currentScroll > lastScroll.current && currentScroll > 80) {
+      // scrolling down
+      setHideHeader(true);
     } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setDark(true);
+      // scrolling up
+      setHideHeader(false);
     }
+
+    lastScroll.current = currentScroll;
+
   };
 
+  window.addEventListener("scroll", handleScroll);
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
+
+  
   const handleLogout = async () => {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
@@ -137,139 +138,174 @@ useEffect(() => {
 
   };
 
+  const handleCreateUsername = () => {
+  if (!username.trim()) return;
+
+  const clean = username.toLowerCase().replace(/\s+/g, "");
+
+  // save username
+  localStorage.setItem("username", clean);
+
+  // redirect to profile page
+  router.push(`/${clean}`);
+};
+
+
   return (
-    <main className="pt-16 min-h-screen bg-white dark:bg-gray-950 transition-all duration-300">
+    <main className="pt-16 min-h-screen bg-white transition-all duration-300">
+
+ {/* ================= HEADER ================= */}
+<header className="fixed top-0 left-0 w-full z-50 flex justify-center px-4 pointer-events-none">
+  <div
+    className={`
+      pointer-events-auto
+      w-full max-w-7xl
+      rounded-full
+      flex items-center justify-between
+      bg-white
+      shadow-[0_10px_30px_rgba(0,0,0,0.12)]
+      px-10 h-20 mt-4
+      transition-all duration-500 ease-out
+      transform
+
+      ${hideHeader ? "-translate-y-24 opacity-0" : "translate-y-0 opacity-100"}
+    `}
+  >
+
+
+    {/* LOGO */}
+    <span
+  className="font-extrabold tracking-tight text-2xl text-gray-900"
+>
+  Influencer
+</span>
+
+
+    {/* CENTER NAV */}
+    <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium">
+      <button
+        onClick={() => router.push("/features")}
+        className="text-gray-600 hover:text-gray-900 transition"
+      >
+        Features
+      </button>
+
+      <button
+        onClick={() => router.push("/subscribe")}
+        className="text-gray-600 hover:text-gray-900 transition"
+      >
+        Pricing
+      </button>
+
+      {isAdmin && (
+        <button
+          onClick={() => router.push("/admin")}
+          className="text-gray-600 hover:text-gray-900 transition"
+        >
+          Admin
+        </button>
+      )}
+    </nav>
+
+    {/* RIGHT SIDE */}
+    <div className="flex items-center gap-4 relative">
 
       
-      {/* ================= HEADER ================= */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+      {/* MOBILE MENU */}
+      <button
+        className="md:hidden text-2xl text-gray-700"
+        onClick={() => setMobileMenu(!mobileMenu)}
+      >
+        ☰
+      </button>
 
+      {/* AUTH */}
+      {isLoggedIn === null ? null : !isLoggedIn ? (
+        <div className="hidden md:flex items-center gap-3">
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <span className="text-2xl font-bold text-gray-900 dark:text-white">
-            Influencer
-          </span>
+          <button
+            onClick={() => router.push("/login")}
+            className="px-5 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+          >
+            Login
+          </button>
 
-          <nav className="flex items-center gap-3 sm:gap-6 text-sm sm:text-base text-gray-700 dark:text-gray-300 font-medium relative">
-            
-            <button
-            onClick={() => router.push("/features")}
-            className="hidden sm:inline hover:text-emerald-500"
-            >
-            Features
-            </button>
+          <button
+            onClick={() => router.push("/register")}
+            className="px-5 py-2 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+          >
+            Sign up free
+          </button>
 
-            <a
-              onClick={() => router.push("/subscribe")}
-              className="hidden sm:inline hover:text-emerald-500 cursor-pointer"
-            >
-              Pricing
-            </a>
-            {isAdmin && (
-  <button
-    onClick={() => router.push("/admin")}
-    className="hidden md:inline hover:text-emerald-500 font-medium"
-  >
-    Admin
-  </button>
-)}
-
-
-
-            {/* 🌗 Dark mode */}
-            <button
-              onClick={toggleTheme}
-              className="relative w-14 h-8 flex items-center bg-gray-300 dark:bg-gray-700 rounded-full p-1 transition-colors duration-300"
-            >
-              <div
-                className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-sm transition-transform duration-300 ${
-                  dark ? "translate-x-6" : "translate-x-0"
-                }`}
-              >
-                {dark ? "🌙" : "☀️"}
-              </div>
-            </button>
-
-            {/* MOBILE MENU BUTTON */}
-            <button
-              className="sm:hidden text-2xl ml-2"
-              onClick={() => setMobileMenu(!mobileMenu)}
-            >
-              ☰
-            </button>
-
-            {isLoggedIn === null ? null : !isLoggedIn ? (
-
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => router.push("/login")}
-                  className="bg-emerald-600 text-white px-5 py-2 rounded-full hover:bg-emerald-700 transition"
-                >
-                  Login
-                </button>
-
-                <button
-                  onClick={() => router.push("/register")}
-                  className="bg-purple-600 text-white px-5 py-2 rounded-full hover:bg-purple-700 transition"
-                >
-                  Sign Up
-                </button>
+        </div>
+      ) : (
+        <>
+          {/* PROFILE BUTTON */}
+          <div
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="
+              flex items-center gap-3
+              pl-2 pr-3 py-1.5
+              rounded-full
+              bg-gray-100
+              hover:bg-gray-200
+              cursor-pointer
+              transition
+            "
+          >
+            {userImage ? (
+              <img
+                src={userImage}
+                alt="profile"
+                className="w-9 h-9 rounded-full object-cover border-2 border-white"
+              />
+            ) : userName ? (
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+                {userName.charAt(0).toUpperCase()}
               </div>
             ) : (
-              <>
-                <div
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="flex items-center gap-3 cursor-pointer"
-                >
-                  {userImage ? (
-                  <img
-                    src={userImage}
-                    alt="profile"
-                    className="w-9 h-9 rounded-full border object-cover"
-                  />
-                ) : userName ? (
-                  <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold text-lg">
-                    {userName.charAt(0).toUpperCase()}
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
-                )}
-
-                  {userName && (
-                    <span className="hidden md:block font-medium">
-                      {userName}
-                    </span>
-                  )}
-                </div>
-
-                {menuOpen && (
-                  <div className="absolute right-0 top-14 w-40 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        router.push("/dashboard/edit");
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      Edit Profile
-                    </button>
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </>
+              <div className="w-9 h-9 rounded-full bg-gray-300 animate-pulse" />
             )}
-          </nav>
-        </div>
-      </header>
+
+            {userName && (
+              <span className="hidden lg:block text-sm font-medium text-gray-800">
+                {userName}
+              </span>
+            )}
+          </div>
+
+          {/* DROPDOWN */}
+          {menuOpen && (
+            <div className="absolute right-0 top-16 w-44 bg-white text-gray-800 rounded-xl shadow-xl overflow-hidden">
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/dashboard/edit");
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-gray-100"
+              >
+                Edit Profile
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  </div>
+</header>
+
+
+
 {/* MOBILE MENU */}
 {mobileMenu && (
-  <div className="sm:hidden mt-16 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-6 py-4 space-y-4">
+  <div className="sm:hidden mt-16 bg-white border-b border-gray-200 px-6 py-4 space-y-4">
 
     <a href="#" className="block">Features</a>
 
@@ -310,212 +346,206 @@ useEffect(() => {
 )}
 
       {/* ================= HERO ================= */}
-<section className="max-w-7xl mx-auto px-6 pt-20 md:pt-24 lg:min-h-[88vh] grid lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+<section className="relative overflow-hidden min-h-screen -mt-16 pt-16 pb-28">
 
-  {/* LEFT CONTENT */}
-  <div className="text-center lg:text-left">
+  {/* BLUE BACKGROUND */}
+  <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900"></div>
 
-    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight md:leading-[1.15] text-gray-900 dark:text-white">
-      Create a single page for <br className="hidden sm:block"/>
-      all your affiliate & <br className="hidden sm:block"/>
-      business links
-    </h1>
+  {/* optional glow for premium look */}
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.15),transparent_60%)]"></div>
 
-    <p className="mt-6 text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto lg:mx-0">
-      Share one link on Instagram, YouTube, or anywhere.
-      Showcase products, brands, and websites you promote.
-    </p>
+  <div className="relative max-w-7xl mx-auto px-6 pt-20 md:pt-24 lg:min-h-[88vh]
+  grid lg:grid-cols-2 gap-12 lg:gap-20 items-start text-white">
 
-    <div className="mt-8 flex flex-col items-center lg:items-start">
+    {/* LEFT CONTENT */}
+    <div className="text-center lg:text-left">
 
-      {/* CTA */}
-      <button
-        onClick={() => router.push("/subscribe")}
-        className="bg-emerald-500 text-white px-8 py-4 rounded-full text-lg
-        shadow-md hover:bg-emerald-600 transition
-        w-full sm:w-auto max-w-xs"
-      >
-        Start your page for ₹99/month
-      </button>
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight md:leading-[1.15]">
+        Create a single page for <br className="hidden sm:block"/>
+        all your affiliate & <br className="hidden sm:block"/>
+        business links
+      </h1>
 
-      <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs">
-        Cancel anytime • No hidden fees
+      <p className="mt-6 text-lg text-white/80 max-w-xl mx-auto lg:mx-0">
+        Share one link on Instagram, YouTube, or anywhere.
+        Showcase products, brands, and websites you promote.
       </p>
 
-    
-      {/* SOCIAL PROOF */}
-      <div className="mt-10 flex justify-center lg:justify-start gap-6 sm:gap-10 flex-wrap">
+      <div className="mt-8 flex flex-col items-center lg:items-start">
+        {/* Username Creator */}
+<div className="flex w-full max-w-xl mx-auto lg:mx-0 mt-6">
 
-        <div className="text-center">
-          <p className="text-4xl font-extrabold bg-gradient-to-r from-emerald-500 to-emerald-700 bg-clip-text text-transparent">
-            {creators.toLocaleString()}+
-          </p>
-          <p className="text-sm text-gray-500">Creators</p>
-        </div>
+  {/* input */}
+  <div className="flex items-center bg-white rounded-full px-5 py-4 flex-1 shadow-md">
+    <span className="text-gray-500 mr-1">
+      influencer/
+    </span>
 
-        <div className="text-center">
-          <p className="text-4xl font-extrabold bg-gradient-to-r from-purple-500 to-purple-700 bg-clip-text text-transparent">
-            {clicks.toLocaleString()}+
-          </p>
-          <p className="text-sm text-gray-500">Clicks</p>
-        </div>
-
-        <div className="text-center">
-          <p className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-            {brands.toLocaleString()}+
-          </p>
-          <p className="text-sm text-gray-500">Brands</p>
-        </div>
-
-      </div>
-
-    </div>
+    <input
+      type="text"
+      placeholder="yourname"
+      value={username}
+      onChange={(e) => setUsername(e.target.value)}
+      className="outline-none flex-1 text-gray-800 placeholder-gray-400"
+    />
   </div>
 
-  {/* RIGHT MOBILE PREVIEW */}
-<div className="flex justify-center items-center lg:-mt-2">
-
-  <div className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px]">
-
-    <div className="
-      px-1.5 py-2
-      rounded-[28px]
-      bg-white dark:bg-gray-900
-      shadow-[0_25px_60px_rgba(0,0,0,0.18)]
-    ">
-
-      <img
-        src="/images/dashboard-profile.png"
-        alt="mobile preview"
-        className="
-          w-full
-          h-auto
-          object-contain
-          rounded-[22px]
-        "
-      />
-
-    </div>
-
-  </div>
+  {/* button */}
+  <button
+    onClick={handleCreateUsername}
+    className="ml-3 bg-green-800 hover:bg-green-700 text-white px-8 rounded-full font-semibold transition"
+  >
+    Get started free
+  </button>
 
 </div>
 
+        {/* SOCIAL PROOF */}
+        <div className="mt-10 flex justify-center lg:justify-start gap-6 sm:gap-10 flex-wrap">
 
+          <div className="text-center">
+            <p className="text-4xl font-extrabold">
+              {creators.toLocaleString()}+
+            </p>
+            <p className="text-sm text-white/70">Creators</p>
+          </div>
+
+          <div className="text-center">
+            <p className="text-4xl font-extrabold">
+              {clicks.toLocaleString()}+
+            </p>
+            <p className="text-sm text-white/70">Clicks</p>
+          </div>
+
+          <div className="text-center">
+            <p className="text-4xl font-extrabold">
+              {brands.toLocaleString()}+
+            </p>
+            <p className="text-sm text-white/70">Brands</p>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    {/* RIGHT MOBILE PREVIEW */}
+    <div className="flex justify-center items-center lg:-mt-10 drop-shadow-2xl">
+      <div className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px]">
+
+        <div className="px-1.5 py-2 rounded-[28px] bg-white shadow-[0_25px_60px_rgba(0,0,0,0.18)]">
+
+          <img
+            src="/images/dashboard-profile.png"
+            alt="mobile preview"
+            className="w-full h-auto object-contain rounded-[22px]"
+          />
+
+        </div>
+      </div>
+    </div>
+
+  </div>
 </section>
 
 
-      {/* FEATURES */}
-      <section className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-3 gap-10">
-        {[
-          {
-            title: "One Link for Everything",
-            desc: "Create a single, beautiful page to hold all of your affiliate and business links.",
-          },
-          {
-            title: "Showcase Any Link",
-            desc: "Add affiliate links, brand pages, product promos, or any business links you want.",
-          },
-          {
-            title: "Simple & Professional",
-            desc: "Set up easily and customize your page to look modern and professional in minutes.",
-          },
-        ].map((item) => (
-          <div
-            key={item.title}
-            className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 shadow-sm"
-          >
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {item.title}
-            </h3>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">
-              {item.desc}
-            </p>
-          </div>
-        ))}
-      </section>
-      {/* ================= TESTIMONIALS ================= */}
-<section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 overflow-hidden">
 
-  <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-    Loved by Creators & Influencers
-  </h2>
 
-  {/* moving row */}
-  <div className="mt-14 relative">
-    <div className="flex gap-8 animate-scroll">
+      {/* ================= FEATURES + TESTIMONIALS ================= */}
+<section className="bg-[#C9E71F] pt-20 pb-36 overflow-hidden">
+
+
+  {/* CENTER CONTENT */}
+  <div className="max-w-7xl mx-auto px-6">
+
+    {/* FEATURES */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
 
       {[
-  {
-    name: "Aman Verma",
-    role: "YouTuber",
-    text: "This page helped me share all my links in one place. Super clean & easy!",
-    rating: 5,
-  },
-  {
-    name: "Riya Sharma",
-    role: "Instagram Creator",
-    text: "My followers find everything quickly now. It boosted my engagement a lot.",
-    rating: 5,
-  },
-  {
-    name: "Karan Patel",
-    role: "Affiliate Marketer",
-    text: "Best tool to promote products & track my links. Highly recommended!",
-    rating: 4,
-  },
-  {
-    name: "Sneha Kapoor",
-    role: "Lifestyle Blogger",
-    text: "Setup was instant and my page looks very professional.",
-    rating: 5,
-  },
+        {
+          title: "One Link for Everything",
+          desc: "Create a single, beautiful page to hold all of your affiliate and business links.",
+        },
+        {
+          title: "Showcase Any Link",
+          desc: "Add affiliate links, brand pages, product promos, or any business links you want.",
+        },
+        {
+          title: "Simple & Professional",
+          desc: "Set up easily and customize your page to look modern and professional in minutes.",
+        },
+      ].map((item) => (
+        <div
+          key={item.title}
+          className="rounded-2xl border border-black/10 bg-white p-8 shadow-sm hover:shadow-lg transition"
+        >
+          <h3 className="text-xl font-semibold text-gray-900">
+            {item.title}
+          </h3>
 
-  // ⭐ duplicate for seamless scroll
-  {
-    name: "Aman Verma",
-    role: "YouTuber",
-    text: "This page helped me share all my links in one place. Super clean & easy!",
-    rating: 5,
-  },
-  {
-    name: "Riya Sharma",
-    role: "Instagram Creator",
-    text: "My followers find everything quickly now. It boosted my engagement a lot.",
-    rating: 5,
-  },
-  {
-    name: "Karan Patel",
-    role: "Affiliate Marketer",
-    text: "Best tool to promote products & track my links. Highly recommended!",
-    rating: 4,
-  },
-  {
-    name: "Sneha Kapoor",
-    role: "Lifestyle Blogger",
-    text: "Setup was instant and my page looks very professional.",
-    rating: 5,
-  },
-].map((t, i) => (
+          <p className="mt-4 text-gray-700 leading-relaxed">
+            {item.desc}
+          </p>
+        </div>
+      ))}
+    </div>
 
+    {/* TESTIMONIAL TITLE */}
+    <h2 className="text-3xl font-bold text-center text-gray-900 mt-24">
+      Loved by Creators & Influencers
+    </h2>
+
+  </div>
+
+  {/* ✅ FULL WIDTH TESTIMONIAL STRIP */}
+  <div className="mt-14 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+
+    <div className="flex gap-8 animate-scroll px-6">
+
+      {[
+        {
+          name: "Aman Verma",
+          role: "YouTuber",
+          text: "This page helped me share all my links in one place. Super clean & easy!",
+          rating: 5,
+        },
+        {
+          name: "Riya Sharma",
+          role: "Instagram Creator",
+          text: "My followers find everything quickly now. It boosted my engagement a lot.",
+          rating: 5,
+        },
+        {
+          name: "Karan Patel",
+          role: "Affiliate Marketer",
+          text: "Best tool to promote products & track my links. Highly recommended!",
+          rating: 4,
+        },
+        {
+          name: "Sneha Kapoor",
+          role: "Lifestyle Blogger",
+          text: "Setup was instant and my page looks very professional.",
+          rating: 5,
+        },
+        {
+          name: "Aman Verma",
+          role: "YouTuber",
+          text: "This page helped me share all my links in one place. Super clean & easy!",
+          rating: 5,
+        },
+      ].map((t, i) => (
         <div
           key={i}
-          className="min-w-[320px] bg-gradient-to-br from-white/70 to-gray-100/60 dark:from-gray-800/70 dark:to-gray-900/70 backdrop-blur rounded-2xl p-6 shadow-md hover:shadow-lg transition transform-gpu will-change-transform backface-visibility-hidden"
-
-
-
+          className="min-w-[320px] bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition"
         >
-          {/* ⭐ stars */}
-          <div className="flex text-amber-400 text-lg mb-2 drop-shadow-sm">
+          <div className="flex text-amber-400 text-lg mb-2">
             {"★".repeat(t.rating)}
             {"☆".repeat(5 - t.rating)}
           </div>
 
-          <p className="text-gray-600 dark:text-gray-400 italic">
-            “{t.text}”
-          </p>
+          <p className="text-gray-600 italic">“{t.text}”</p>
 
-          <div className="mt-4 font-semibold text-gray-900 dark:text-white">
+          <div className="mt-4 font-semibold text-gray-900">
             {t.name}
           </div>
 
@@ -529,145 +559,197 @@ useEffect(() => {
   </div>
 </section>
 
+
 {/* ================= FAQ ================= */}
-<section className="max-w-4xl mx-auto px-6 py-20">
-  <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-    Frequently Asked Questions
-  </h2>
+<section className="bg-[#8B0015] py-24 pt-20 pb-40 overflow-hidden">
+  <div className="max-w-4xl mx-auto px-6">
 
-  <div className="mt-10 space-y-4">
+    <h2 className="text-3xl md:text-4xl font-bold text-center text-[#F7C6CF]">
+      Frequently Asked Questions
+    </h2>
 
-    {[
-      {
-        q: "How does this platform work?",
-        a: "Create your page, add your links, and share one single link with your audience.",
-      },
-      {
-        q: "Can I cancel anytime?",
-        a: "Yes, you can cancel your subscription anytime. No hidden charges.",
-      },
-      {
-        q: "Is payment secure?",
-        a: "Yes. All payments are securely processed via Razorpay.",
-      },
-      {
-        q: "Can I use it for affiliate marketing?",
-        a: "Absolutely! You can promote affiliate products, services, or your own business links.",
-      },
-      {
-        q: "Will I get international payments support?",
-        a: "Yes. International payments can be enabled once your account is fully activated.",
-      },
-    ].map((faq, i) => (
-      <details
-        key={i}
-        className="group border border-gray-200 dark:border-gray-800 rounded-xl p-5 bg-white dark:bg-gray-900"
-      >
-        <summary className="cursor-pointer font-semibold text-gray-900 dark:text-white flex justify-between items-center">
-          {faq.q}
-          <span className="group-open:rotate-180 transition">⌄</span>
-        </summary>
+    <div className="mt-12 space-y-5">
 
-        <p className="mt-3 text-gray-600 dark:text-gray-400">
-          {faq.a}
-        </p>
-      </details>
-    ))}
+      {[
+        {
+          q: "How does this platform work?",
+          a: "Create your page, add your links, and share one single link with your audience.",
+        },
+        {
+          q: "Can I cancel anytime?",
+          a: "Yes, you can cancel your subscription anytime. No hidden charges.",
+        },
+        {
+          q: "Is payment secure?",
+          a: "Yes. All payments are securely processed via Razorpay.",
+        },
+        {
+          q: "Can I use it for affiliate marketing?",
+          a: "Absolutely! You can promote affiliate products, services, or your own business links.",
+        },
+        {
+          q: "Will I get international payments support?",
+          a: "Yes. International payments can be enabled once your account is fully activated.",
+        },
+      ].map((faq, i) => (
+        <details
+          key={i}
+          className="group rounded-xl p-5 bg-[#A30D22] border border-white/10 transition hover:bg-[#B3122A]"
+        >
+          <summary className="cursor-pointer font-semibold text-[#FFE3E7] flex justify-between items-center">
+            {faq.q}
+            <span className="transition group-open:rotate-180 text-[#FFD2D8]">
+              ⌄
+            </span>
+          </summary>
 
+          <p className="mt-3 text-[#FFD2D8] leading-relaxed">
+            {faq.a}
+          </p>
+        </details>
+      ))}
+
+    </div>
   </div>
 </section>
 
 
-      {/* CTA */}
-<section className="py-20 text-center">
-  <p className="text-3xl font-semibold text-gray-900 dark:text-white">
+
+      {/* ================= CTA + FOOTER BLOCK ================= */}
+<section className="bg-[#5B2C6F] text-white text-center pt-24 pb-0">
+
+  {/* CTA HEADING */}
+  <p className="text-3xl font-semibold max-w-2xl mx-auto">
     Start earning from your links today for just ₹99/month
   </p>
 
-  {/* clickable CTA */}
-  <div
-    onClick={() => router.push("/subscribe")}
-    className="mt-10 cursor-pointer flex justify-center"
-  >
-    <div className="bg-emerald-500 p-3 rounded-full shadow-[0_10px_30px_rgba(16,185,129,0.45)] transition duration-300 hover:shadow-[0_18px_45px_rgba(16,185,129,0.65)]">
-      
-      <div className="bg-emerald-600 text-white text-center py-5 px-6 rounded-full shadow-inner transform transition duration-300 ease-out hover:scale-105 will-change-transform">
+  {/* CTA BUTTON */}
+  <div className="mt-10 flex justify-center">
+    <button
+      onClick={() => router.push("/subscribe")}
+      className="
+        bg-white text-[#5B2C6F]
+        py-5 px-10
+        rounded-full
+        shadow-lg
+        transition-all duration-300
+        hover:scale-105
+        hover:bg-gray-100
+        active:scale-95
+      "
+    >
+      <p className="text-xl font-semibold">
+        Start My Page Now 🚀
+      </p>
 
-        <p className="text-xl font-semibold">
-          Start My Page Now 🚀
-        </p>
-
-        <p className="text-sm text-white/90 mt-1">
-          Join today & start sharing your link in minutes
-        </p>
-
-      </div>
-    </div>
+      <p className="text-sm opacity-80 mt-1">
+        Join today & start sharing your link in minutes
+      </p>
+    </button>
   </div>
 
   {/* TRUST BADGES */}
-<div className="mt-10 flex flex-wrap justify-center items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+  <div className="mt-12 flex flex-wrap justify-center gap-4 text-sm">
 
-  <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
-    🔒 <span>Secure Payments By Razorpay</span>
+    <div className="bg-white/15 px-4 py-2 rounded-full">
+      🔒 Secure Payments by Razorpay
+    </div>
+
+    <div className="bg-white/15 px-4 py-2 rounded-full">
+      ⚡ Instant Setup
+    </div>
+
+    <div className="bg-white/15 px-4 py-2 rounded-full">
+      🌍 Global Ready
+    </div>
+
+    <div className="bg-white/15 px-4 py-2 rounded-full">
+      💳 No Hidden Fees
+    </div>
+
   </div>
 
-  <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
-    ⚡ <span>Instant Setup</span>
-  </div>
+  {/* ================= PREMIUM SAAS FOOTER ================= */}
+<footer className="relative mt-24 text-white">
 
-  <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
-    🌍 <span>Global Ready</span>
-  </div>
+  {/* Background Gradient */}
+  <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#111827] to-[#020617]"></div>
 
-  <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
-    💳 <span>No Hidden Fees</span>
-  </div>
+  {/* subtle glow */}
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.15),transparent_60%)]"></div>
 
-</div>
+  <div className="relative max-w-7xl mx-auto px-6 py-20">
 
-</section>
+    {/* TOP SECTION */}
+    <div className="flex flex-col md:flex-row md:justify-between gap-14">
 
-            {/* ================= FOOTER ================= */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 mt-20">
-        <div className="max-w-7xl mx-auto px-6 py-10 text-center text-sm text-gray-600 dark:text-gray-400">
+      {/* BRAND */}
+      <div>
+        <h3 className="text-xl font-semibold tracking-tight">
+          Influencer
+        </h3>
 
-          <div className="flex flex-wrap justify-center gap-6 mb-4">
-            <button
-            onClick={() => router.push("/about")}
-            className="hover:text-emerald-500 transition"
-            >
-            About
-            </button>
-            <button
-            onClick={() => router.push("/privacy")}
-            className="hover:text-emerald-500 transition"
-            >
-            Privacy Policy </button>
-            <button
-            onClick={() => router.push("/terms")}
-            className="hover:text-emerald-500 transition"
-        >
-          Terms & Conditions
-          </button>
-            <button
-          onClick={() => router.push("/contact")}
-          className="hover:text-emerald-500 transition"
+        <p className="text-white/60 mt-4 max-w-sm text-sm leading-relaxed">
+          Build one powerful link to showcase your business,
+          products, and affiliate partnerships.
+        </p>
+      </div>
+
+      {/* NAV */}
+      <div className="flex flex-wrap gap-x-12 gap-y-4 text-white/70 text-sm font-medium">
+
+        {[
+          { label: "About", path: "/about" },
+          { label: "Privacy Policy", path: "/privacy" },
+          { label: "Terms", path: "/terms" },
+          { label: "Contact", path: "/contact" },
+        ].map((item) => (
+          <button
+            key={item.label}
+            onClick={() => router.push(item.path)}
+            className="
+              relative
+              hover:text-white
+              transition
+              after:absolute
+              after:left-0
+              after:-bottom-1
+              after:h-[1px]
+              after:w-0
+              after:bg-gradient-to-r
+              after:from-indigo-400
+              after:to-purple-400
+              after:transition-all
+              hover:after:w-full
+            "
           >
-          Contact Us
+            {item.label}
           </button>
+        ))}
 
-          </div>
+      </div>
 
-          <p>
-            © {new Date().getFullYear()} Influencer. All rights reserved.
-          </p>
+    </div>
 
-        </div>
-      </footer>
-      
+    {/* GLOW DIVIDER */}
+    <div className="my-14 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
+    {/* BOTTOM ROW */}
+    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-white/50 text-xs tracking-wide">
 
+      <p>
+        © {new Date().getFullYear()} Influencer. All rights reserved.
+      </p>
+
+      <p>
+        Crafted for creators & professionals worldwide.
+      </p>
+
+    </div>
+
+  </div>
+</footer>
+</section>
     </main>
   );
 }
