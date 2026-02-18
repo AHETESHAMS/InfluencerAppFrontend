@@ -3,102 +3,33 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, getSession } from "next-auth/react";
-import MinimalTemplate from "@/components/templates/MinimalTemplate";
-
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 
 
 export default function HomePage() {
-  const [mobileMenu, setMobileMenu] = useState(false);
   const router = useRouter();
 
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const [userName, setUserName] = useState<string | null>(null);
-  const [userImage, setUserImage] = useState<string | null>(null);
-  const [showTemplates, setShowTemplates] = useState(false);
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [username, setUsername] = useState("");
-  const previewData = {
-  name: "Rohit Creator",
-  bio: "Affiliate marketer & content creator",
-  image: "/avatar.png",
-  links: [
-    { title: "My Store", url: "#" },
-    { title: "YouTube Channel", url: "#" },
-    { title: "Instagram", url: "#" },
-  ],
-};
-
-  
+const [username, setUsername] = useState("");
 
 
 
-  // ⭐ COUNTER STATES
-const [creators, setCreators] = useState(0);
-const [clicks, setClicks] = useState(0);
-const [brands, setBrands] = useState(0);
-
-
-  
-
-
-    useEffect(() => {
-  const token = localStorage.getItem("token");
-  setIsLoggedIn(!!token);
-
-  loadUser();
-}, []);
-
-
-  const loadUser = async () => {
-
-  const savedName = localStorage.getItem("userName");
-  const savedImage = localStorage.getItem("userImage");
-
-  if (savedName) setUserName(savedName);
-  if (savedImage) setUserImage(savedImage);
-
-  const role = localStorage.getItem("role");
-  if (role?.toUpperCase() === "ADMIN") {
-    setIsAdmin(true);
-  }
-
-  // session fetch silently (background update)
-  const session = await getSession();
-
-  if (session?.user) {
-    const name = session.user.name || savedName;
-    const image = session.user.image || savedImage;
-
-    setUserName(name);
-    setUserImage(image || null);
-
-    // update storage for next loads
-    localStorage.setItem("userName", name || "");
-    localStorage.setItem("userImage", image || "");
-  }
-};
-
-  // ⭐ COUNTER ANIMATION
 useEffect(() => {
-  let started = false;
+  const animate = (
+  setter: React.Dispatch<React.SetStateAction<number>>,
+  target: number
+) => {
 
-  if (started) return;
-  started = true;
-
-  const animate = (setter: React.Dispatch<React.SetStateAction<number>>, target: number) => {
     let count = 0;
-    const duration = 1600;
-    const stepTime = 32;
+    const duration = 1500;
+    const stepTime = 16;
     const steps = duration / stepTime;
     const increment = target / steps;
 
     const update = () => {
       count += increment;
+
       if (count < target) {
         setter(Math.floor(count));
         requestAnimationFrame(update);
@@ -110,299 +41,44 @@ useEffect(() => {
     update();
   };
 
-  animate(setCreators, 12000);
-  animate(setClicks, 2000000);
-  animate(setBrands, 150);
+  animate(setCreators, 14873);
+  animate(setClicks, 2847321);
+  animate(setBrands, 327);
 
 }, []);
 
-const [hideHeader, setHideHeader] = useState(false);
-const lastScroll = useRef(0);
+const previewData = {
+  name: "Rohit Creator",
+  bio: "Affiliate marketer & content creator",
+  image: "/avatar.png",
+  links: [
+    { title: "My Store", url: "#" },
+    { title: "YouTube Channel", url: "#" },
+    { title: "Instagram", url: "#" },
+  ],
+};
+   // ⭐ COUNTER STATES
+const [creators, setCreators] = useState(0);
+const [clicks, setClicks] = useState(0);
+const [brands, setBrands] = useState(0);
 
-useEffect(() => {
-  const handleScroll = () => {
-    const currentScroll = window.scrollY;
-    setScrolled(currentScroll > 20);
-
-
-    if (currentScroll > lastScroll.current && currentScroll > 80) {
-      // scrolling down
-      setHideHeader(true);
-    } else {
-      // scrolling up
-      setHideHeader(false);
-    }
-
-    lastScroll.current = currentScroll;
-
-  };
-
-  window.addEventListener("scroll", handleScroll);
-  return () => window.removeEventListener("scroll", handleScroll);
-}, []);
-
-  
-  const handleLogout = async () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("role");
-  localStorage.removeItem("userName");
-
-
-  await signOut({ redirect: false });
-
-  window.location.reload();   // instant refresh + clean state
-
-  };
-
-  const handleCreateUsername = () => {
+const handleCreateUsername = () => {
   if (!username.trim()) return;
 
   const clean = username.toLowerCase().replace(/\s+/g, "");
 
-  // save username
   localStorage.setItem("username", clean);
 
-  // redirect to profile page
   router.push(`/${clean}`);
 };
 
-
-  return (
+return (
     <main className="pt-16 min-h-screen bg-white transition-all duration-300">
 
- {/* ================= HEADER ================= */}
-<header className="fixed top-0 left-0 w-full z-50 flex justify-center px-4 pointer-events-none">
-  <div
-    className={`
-      pointer-events-auto
-      w-full max-w-7xl
-      rounded-full
-      flex items-center justify-between
-      bg-white
-      shadow-[0_10px_30px_rgba(0,0,0,0.12)]
-      px-5 md:px-10
-      h-16 md:h-20
-      mt-3 md:mt-4
-      transition-all duration-500 ease-out
-      transform
-      ${hideHeader ? "-translate-y-24 opacity-0" : "translate-y-0 opacity-100"}
-    `}
-  >
+ {/* Global Header */}
+<Header />
 
-    {/* LOGO */}
-    <span className="font-extrabold tracking-tight text-xl md:text-2xl text-gray-900">
-      Influencer
-    </span>
-
-    {/* CENTER NAV */}
-    <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium">
-
-      <button
-        onClick={() => router.push("/features")}
-        className="text-gray-600 hover:text-gray-900 transition"
-      >
-        Features
-      </button>
-
-      <button
-        onClick={() => router.push("/subscribe")}
-        className="text-gray-600 hover:text-gray-900 transition"
-      >
-        Pricing
-      </button>
-
-      {/* ⭐ Templates Capsule */}
-      <button
-        onClick={() => router.push("/templates")}
-
-        className="
-          px-5 py-2
-          rounded-full
-          bg-gradient-to-r from-indigo-500 to-purple-500
-          text-white
-          shadow-md
-          hover:scale-105
-          transition
-        "
-      >
-        Templates
-      </button>
-
-      {isAdmin && (
-        <button
-          onClick={() => router.push("/admin")}
-          className="text-gray-600 hover:text-gray-900 transition"
-        >
-          Admin
-        </button>
-      )}
-    </nav>
-
-    {/* RIGHT SIDE */}
-    <div className="flex items-center gap-3 relative">
-
-      {/* MOBILE MENU BUTTON */}
-      <button
-        className="md:hidden text-2xl text-gray-700"
-        onClick={() => setMobileMenu(!mobileMenu)}
-      >
-        ☰
-      </button>
-
-      {/* AUTH */}
-      {isLoggedIn === null ? null : !isLoggedIn ? (
-        <div className="hidden md:flex items-center gap-3">
-
-          <button
-            onClick={() => router.push("/login")}
-            className="px-5 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
-          >
-            Login
-          </button>
-
-          <button
-            onClick={() => router.push("/register")}
-            className="px-5 py-2 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-          >
-            Sign up free
-          </button>
-
-        </div>
-      ) : (
-        <>
-          {/* PROFILE BUTTON */}
-          <div
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="
-              flex items-center gap-3
-              pl-2 pr-3 py-1.5
-              rounded-full
-              bg-gray-100
-              hover:bg-gray-200
-              cursor-pointer
-              transition
-            "
-          >
-            {userImage ? (
-              <img
-                src={userImage}
-                alt="profile"
-                className="w-9 h-9 rounded-full object-cover border-2 border-white"
-              />
-            ) : userName ? (
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
-                {userName.charAt(0).toUpperCase()}
-              </div>
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-gray-300 animate-pulse" />
-            )}
-
-            {userName && (
-              <span className="hidden lg:block text-sm font-medium text-gray-800">
-                {userName}
-              </span>
-            )}
-          </div>
-
-          {/* DROPDOWN */}
-          {menuOpen && (
-            <div className="absolute right-0 top-16 w-44 bg-white text-gray-800 rounded-xl shadow-xl overflow-hidden">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  router.push("/dashboard/edit");
-                }}
-                className="w-full text-left px-4 py-3 hover:bg-gray-100"
-              >
-                Edit Profile
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  </div>
-</header>
-
-
-
-
-{/* MOBILE MENU */}
-{mobileMenu && (
-  <div className="fixed top-20 left-0 w-full bg-white shadow-lg z-40 px-6 py-6 space-y-5 md:hidden">
-
-    {/* FEATURES */}
-    <button
-      onClick={() => {
-        router.push("/features");
-        setMobileMenu(false);
-      }}
-      className="block w-full text-left text-gray-800 font-medium"
-    >
-      Features
-    </button>
-
-    {/* PRICING */}
-    <button
-      onClick={() => {
-        router.push("/subscribe");
-        setMobileMenu(false);
-      }}
-      className="block w-full text-left text-gray-800 font-medium"
-    >
-      Pricing
-    </button>
-
-    {/* ADMIN */}
-    {isAdmin && (
-      <button
-        onClick={() => {
-          router.push("/admin");
-          setMobileMenu(false);
-        }}
-        className="block w-full text-left text-gray-800 font-medium"
-      >
-        Admin
-      </button>
-    )}
-
-    {/* AUTH BUTTONS */}
-    {!isLoggedIn && (
-      <>
-        <button
-          onClick={() => {
-            router.push("/login");
-            setMobileMenu(false);
-          }}
-          className="block w-full text-left text-gray-800 font-medium"
-        >
-          Login
-        </button>
-
-        <button
-          onClick={() => {
-            router.push("/register");
-            setMobileMenu(false);
-          }}
-          className="block w-full text-left text-gray-800 font-medium"
-        >
-          Sign Up
-        </button>
-      </>
-    )}
-
-  </div>
-)}
-
-
-      {/* ================= HERO ================= */}
+     {/* ================= HERO ================= */}
 <section className="relative overflow-hidden min-h-screen -mt-16 pt-16 pb-28">
 
   {/* BLUE BACKGROUND */}
@@ -691,9 +367,8 @@ useEffect(() => {
 </section>
 
 
-
-      {/* ================= CTA + FOOTER BLOCK ================= */}
-<section className="bg-[#5B2C6F] text-white text-center pt-24 pb-0">
+{/* ================= CTA + FOOTER BLOCK ================= */}
+<section className="bg-[#5B2C6F] text-white text-center pt-24 pb-18">
 
   {/* CTA HEADING */}
   <p className="text-3xl font-semibold max-w-2xl mx-auto">
@@ -727,106 +402,27 @@ useEffect(() => {
 
   {/* TRUST BADGES */}
   <div className="mt-12 flex flex-wrap justify-center gap-4 text-sm">
-
     <div className="bg-white/15 px-4 py-2 rounded-full">
       🔒 Secure Payments by Razorpay
     </div>
-
     <div className="bg-white/15 px-4 py-2 rounded-full">
       ⚡ Instant Setup
     </div>
-
     <div className="bg-white/15 px-4 py-2 rounded-full">
       🌍 Global Ready
     </div>
-
     <div className="bg-white/15 px-4 py-2 rounded-full">
       💳 No Hidden Fees
     </div>
-
   </div>
 
-  {/* ================= PREMIUM SAAS FOOTER ================= */}
-<footer className="relative mt-24 text-white">
-
-  {/* Background Gradient */}
-  <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#111827] to-[#020617]"></div>
-
-  {/* subtle glow */}
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.15),transparent_60%)]"></div>
-
-  <div className="relative max-w-7xl mx-auto px-6 py-20">
-
-    {/* TOP SECTION */}
-    <div className="flex flex-col md:flex-row md:justify-between gap-14">
-
-      {/* BRAND */}
-      <div>
-        <h3 className="text-xl font-semibold tracking-tight">
-          Influencer
-        </h3>
-
-        <p className="text-white/60 mt-4 max-w-sm text-sm leading-relaxed">
-          Build one powerful link to showcase your business,
-          products, and affiliate partnerships.
-        </p>
-      </div>
-
-      {/* NAV */}
-      <div className="flex flex-wrap gap-x-12 gap-y-4 text-white/70 text-sm font-medium">
-
-        {[
-          { label: "About", path: "/about" },
-          { label: "Privacy Policy", path: "/privacy" },
-          { label: "Terms", path: "/terms" },
-          { label: "Contact", path: "/contact" },
-        ].map((item) => (
-          <button
-            key={item.label}
-            onClick={() => router.push(item.path)}
-            className="
-              relative
-              hover:text-white
-              transition
-              after:absolute
-              after:left-0
-              after:-bottom-1
-              after:h-[1px]
-              after:w-0
-              after:bg-gradient-to-r
-              after:from-indigo-400
-              after:to-purple-400
-              after:transition-all
-              hover:after:w-full
-            "
-          >
-            {item.label}
-          </button>
-        ))}
-
-      </div>
-
-    </div>
-
-    {/* GLOW DIVIDER */}
-    <div className="my-14 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-
-    {/* BOTTOM ROW */}
-    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-white/50 text-xs tracking-wide">
-
-      <p>
-        © {new Date().getFullYear()} Influencer. All rights reserved.
-      </p>
-
-      <p>
-        Crafted for creators & professionals worldwide.
-      </p>
-
-    </div>
-
+  {/* ✅ Footer inside CTA */}
+  <div className="mt-24">
+    <Footer />
   </div>
-</footer>
+
 </section>
+
     </main>
   );
 }
